@@ -4,7 +4,7 @@ import HomePage from '../Components/HomePage'
 function Home() {
   return (
     <>
-        <NavBar/>
+        {/* <NavBar/> */}
         <HomePage/>
     </>
   )

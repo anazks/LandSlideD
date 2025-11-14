@@ -558,3 +558,126 @@
     font-size: 2rem;
   }
 }
+/* Base styles for grids (assuming they use display: grid or flex) */
+.analysis-grid,
+.download-grid,
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.history-chart {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.5rem;
+  padding: 1rem 0;
+}
+
+.history-bar-wrapper {
+  min-width: 60px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Mobile styles */
+@media (max-width: 767px) {
+  .advanced-wrapper {
+    padding: 0 1rem;
+  }
+
+  .analysis-grid.mobile,
+  .download-grid.mobile,
+  .sensor-grid.mobile {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .history-chart.mobile {
+    justify-content: flex-start;
+  }
+
+  .history-bar-wrapper {
+    min-width: 50px;
+  }
+
+  .analysis-card h3,
+  .sensor-data-section h2,
+  .reports-section h2,
+  .history-section h2 {
+    font-size: 1.25rem;
+  }
+
+  .download-btn {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .download-btn .btn-content {
+    margin-top: 0.5rem;
+  }
+
+  .recommendations-list,
+  .factors-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .analysis-grid.tablet,
+  .download-grid.tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sensor-grid.tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .history-chart {
+    justify-content: space-around;
+  }
+}
+
+/* Desktop styles (default) */
+@media (min-width: 1024px) {
+  .analysis-grid.desktop {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .download-grid.desktop {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sensor-grid.desktop {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* General responsive adjustments */
+.advanced-header h1 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.advanced-header p {
+  font-size: clamp(0.875rem, 3vw, 1rem);
+}
+
+.analysis-card,
+.download-btn {
+  transition: transform 0.2s ease;
+}
+
+.analysis-card:hover,
+.download-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Ensure scrollable elements on mobile */
+@media (max-width: 767px) {
+  .history-section {
+    overflow-x: auto;
+  }
+}

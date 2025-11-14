@@ -5,6 +5,21 @@ function Advanced({ data = {} }) {
   const [prediction, setPrediction] = useState(null);
   const [riskHistory, setRiskHistory] = useState([]);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  // Responsive screen size detection
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Analyze data and make predictions
   useEffect(() => {
@@ -237,6 +252,16 @@ function Advanced({ data = {} }) {
     }
   };
 
+  // Helper to get responsive grid classes
+  const getGridClass = (baseClass) => {
+    if (isMobile) return `${baseClass} mobile`;
+    if (isTablet) return `${baseClass} tablet`;
+    return `${baseClass} desktop`;
+  };
+
+  // Helper for history bars: limit visible bars on mobile
+  const visibleHistory = isMobile ? riskHistory.slice(-5) : riskHistory;
+
   return (
     <div className="advanced-container">
       <div className="advanced-wrapper">
@@ -250,7 +275,7 @@ function Advanced({ data = {} }) {
           <h2>Current Risk Analysis</h2>
           
           {analysisComplete && prediction ? (
-            <div className="analysis-grid">
+            <div className={getGridClass("analysis-grid")}>
               {/* Risk Score Card */}
               <div className="analysis-card risk-score-card">
                 <h3>Risk Assessment</h3>
@@ -337,8 +362,8 @@ function Advanced({ data = {} }) {
         {riskHistory.length > 0 && (
           <div className="history-section">
             <h2>Risk Score History</h2>
-            <div className="history-chart">
-              {riskHistory.map((entry, idx) => (
+            <div className={`history-chart ${isMobile ? 'mobile' : ''}`}>
+              {visibleHistory.map((entry, idx) => (
                 <div key={idx} className="history-bar-wrapper">
                   <div 
                     className="history-bar" 
@@ -361,7 +386,7 @@ function Advanced({ data = {} }) {
           <h2>Download Reports</h2>
           <p className="reports-subtitle">Export comprehensive analysis in multiple formats</p>
           
-          <div className="download-grid">
+          <div className={getGridClass("download-grid")}>
             <button className="download-btn json-btn" onClick={() => downloadReport('json')}>
               <svg className="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -403,7 +428,7 @@ function Advanced({ data = {} }) {
         {/* Current Sensor Data */}
         <div className="sensor-data-section">
           <h2>Current Sensor Data</h2>
-          <div className="sensor-grid">
+          <div className={getGridClass("sensor-grid")}>
             <div className="sensor-item">
               <span className="sensor-label">Temperature</span>
               <span className="sensor-value">{data.temperature || '—'} °C</span>
