@@ -681,3 +681,66 @@
     overflow-x: auto;
   }
 }
+
+/* ========== AI Model Status UI ========== */
+.model-status-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-left: 4px solid #6366f1;
+}
+
+.model-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.model-status-list .status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.status-label {
+  font-size: 1rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-value {
+  font-size: 1.25rem;
+  color: #e2e8f0;
+  font-weight: 700;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.highlight-model {
+  color: #818cf8;
+}
+
+.highlight-confidence {
+  color: #10b981;
+}
+
+.highlight-probability {
+  color: #ef4444;
+}
+
+@media (min-width: 768px) {
+  .model-status-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .model-status-list .status-item {
+    flex: 1;
+    min-width: 200px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
