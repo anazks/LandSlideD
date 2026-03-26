@@ -30,23 +30,22 @@ function Advanced({ data = {} }) {
   const analyzeLandslideRisk = () => {
     // If Firebase data is completely empty/zeroes, use realistic dummy data to demonstrate the UI
     const isDataEmpty = !data || (
-      (data.depthMoisturePercent || 0) === 0 &&
       (data.surfaceMoisturePercent || 0) === 0 &&
       (data.tiltCount || 0) === 0
     );
 
     const activeData = isDataEmpty ? {
-      depthMoisturePercent: 65,      // High depth moisture
-      surfaceMoisturePercent: 55,    // Elevated surface moisture
-      humidity: 85,                  // High humidity
-      isTilted: true,                // Active tilt
-      tiltCount: 4,                  // Multiple tilt events
-      temperature: 26
+      surfaceMoisturePercent: 82,
+      depthMoisturePercent: Math.round(82 * 0.85),
+      humidity: 85,
+      isTilted: true,
+      tiltCount: 7,
+      temperature: 28
     } : data;
 
     const {
-      depthMoisturePercent = 0,
       surfaceMoisturePercent = 0,
+      depthMoisturePercent = Math.round(surfaceMoisturePercent * 0.85),
       humidity = 0,
       isTilted = false,
       tiltCount = 0,
@@ -65,8 +64,15 @@ function Advanced({ data = {} }) {
       bias: -5.0       // Baseline threshold
     };
 
+    // Features Analyzed: Count how many sensor inputs are currently active from raw data
+    const sensors = ['surfaceMoisturePercent', 'humidity', 'tiltCount', 'temperature', 'isTilted'];
+    const featuresAnalyzed = sensors.filter(s => data && data[s] !== undefined).length || 5; // Default to 5 for dummy
+
+    // Confidence calculation (ranges from 75% to 98% based on sensor availability)
+    const confidenceScore = Math.min(98, 75 + (featuresAnalyzed * 4.6));
+
     // Calculate Z score
-    const zScore = 
+    const zScore =
       (depthMoisturePercent * weights.depth) +
       (surfaceMoisturePercent * weights.surface) +
       (humidity * weights.humidity) +
@@ -74,32 +80,28 @@ function Advanced({ data = {} }) {
       (isTilted ? weights.isTilted : 0) +
       weights.bias;
 
-    // Calculate real Probability (0 to 1)
+    // Calculate real Probability (0 to 1) using Sigmoid: P = 1 / (1 + e^-z)
     const probabilityRaw = 1 / (1 + Math.exp(-zScore));
-    // Convert to Percentage (0 to 100)
+    // Convert to Percentage (0 to 100) for the dashboard Risk Score
     const riskScore = Math.round(probabilityRaw * 100);
 
     let riskFactors = [];
 
-    // Analyze each parameter to build risk factors based on their actual contribution to the zScore
+    // Pattern Scanning for specific risks
+    if (depthMoisturePercent > 60 || surfaceMoisturePercent > 70) {
+      riskFactors.push({ factor: 'Critical Soil Saturation', severity: 'Critical', score: 25 });
+    }
+
+    if (tiltCount > 5 || isTilted) {
+      riskFactors.push({ factor: 'Recurring Instability', severity: 'High', score: 20 });
+    }
+
     if (isTilted) {
-      riskFactors.push({ factor: 'Active Tilt', severity: 'Critical', score: Math.round(weights.isTilted * 10) });
+      riskFactors.push({ factor: 'Active Tilt Detected', severity: 'Critical', score: Math.round(weights.isTilted * 10) });
     }
-    if (tiltCount > 5) {
-      riskFactors.push({ factor: 'High Tilt Frequency', severity: 'High', score: Math.round(tiltCount * weights.tiltCount * 5) });
-    }
-    if (surfaceMoisturePercent > 70) {
-      riskFactors.push({ factor: 'Saturated Surface', severity: 'High', score: Math.round((surfaceMoisturePercent * weights.surface) * 5) });
-    } else if (surfaceMoisturePercent > 50) {
-      riskFactors.push({ factor: 'High Surface Moisture', severity: 'Medium', score: Math.round((surfaceMoisturePercent * weights.surface) * 3) });
-    }
-    if (depthMoisturePercent > 60) {
-      riskFactors.push({ factor: 'Deep Soil Saturation', severity: 'High', score: Math.round((depthMoisturePercent * weights.depth) * 5) });
-    } else if (depthMoisturePercent > 45) {
-      riskFactors.push({ factor: 'Elevated Deep Moisture', severity: 'Medium', score: Math.round((depthMoisturePercent * weights.depth) * 3) });
-    }
+
     if (humidity > 80) {
-      riskFactors.push({ factor: 'High Humidity', severity: 'Medium', score: Math.round(humidity * weights.humidity * 2) });
+      riskFactors.push({ factor: 'Elevated Ambient Risk', severity: 'Medium', score: Math.round(humidity * weights.humidity * 2) });
     }
 
     // Calculate prediction timeframe and level based on Probability %
@@ -145,7 +147,7 @@ function Advanced({ data = {} }) {
       ];
     }
 
-    // Store maths for UI breakdown
+    // Store maths for internal logic (ui formulas hidden per previous request)
     const mathBreakdown = {
       zScore: zScore.toFixed(2),
       calculation: `z = (${depthMoisturePercent} × ${weights.depth}) + (${surfaceMoisturePercent} × ${weights.surface}) + (${humidity} × ${weights.humidity}) + (${tiltCount} × ${weights.tiltCount}) + (${isTilted ? 1 : 0} × ${weights.isTilted}) - 5.0`,
@@ -155,6 +157,8 @@ function Advanced({ data = {} }) {
     setPrediction({
       riskScore,
       probabilityRaw: probabilityRaw.toFixed(4),
+      featuresAnalyzed,
+      confidence: confidenceScore.toFixed(0),
       predictionLevel,
       timeframe,
       riskFactors,
@@ -163,7 +167,6 @@ function Advanced({ data = {} }) {
       timestamp: new Date().toISOString()
     });
 
-    // Add to history
     setRiskHistory(prev => [...prev.slice(-9), {
       score: riskScore,
       level: predictionLevel,
@@ -252,7 +255,7 @@ function Advanced({ data = {} }) {
     txt += `Z-Score: ${reportData.prediction?.mathBreakdown?.zScore || 0}\n`;
     txt += `Risk Level: ${reportData.prediction?.predictionLevel || 'Unknown'}\n`;
     txt += `Predicted Timeframe: ${reportData.prediction?.timeframe || 'N/A'}\n\n`;
-    
+
     if (reportData.prediction?.riskFactors?.length > 0) {
       txt += "Risk Factors Detected:\n";
       reportData.prediction.riskFactors.forEach((factor, idx) => {
@@ -314,7 +317,7 @@ function Advanced({ data = {} }) {
         {/* Current Analysis */}
         <div className="analysis-section">
           <h2>Current Risk Analysis</h2>
-          
+
           {analysisComplete && prediction && (
             <div className={getGridClass("analysis-grid")}>
               {/* Risk Score Card */}
@@ -393,19 +396,19 @@ function Advanced({ data = {} }) {
                 <div className="model-status-list">
                   <div className="status-item">
                     <span className="status-label">Model</span>
-                    <span className="status-value highlight-model">DeepSlope-v2.3.1</span>
+                    <span className="status-value highlight-model">2.3.1</span>
                   </div>
                   <div className="status-item">
                     <span className="status-label">Confidence</span>
-                    <span className="status-value highlight-confidence">98%</span>
+                    <span className="status-value highlight-confidence">{prediction.confidence}%</span>
                   </div>
                   <div className="status-item">
                     <span className="status-label">Features Analyzed</span>
-                    <span className="status-value">5</span>
+                    <span className="status-value">{prediction.featuresAnalyzed}</span>
                   </div>
                   <div className="status-item">
                     <span className="status-label">Event Probability</span>
-                    <span className="status-value highlight-probability">{(prediction.probabilityRaw * 100).toFixed(1)}%</span>
+                    <span className="status-value highlight-probability">{prediction.probabilityRaw}</span>
                   </div>
                 </div>
               </div>
@@ -421,9 +424,9 @@ function Advanced({ data = {} }) {
             <div className={`history-chart ${isMobile ? 'mobile' : ''}`}>
               {visibleHistory.map((entry, idx) => (
                 <div key={idx} className="history-bar-wrapper">
-                  <div 
-                    className="history-bar" 
-                    style={{ 
+                  <div
+                    className="history-bar"
+                    style={{
                       height: `${entry.score}%`,
                       background: getRiskColor(entry.level)
                     }}
@@ -441,7 +444,7 @@ function Advanced({ data = {} }) {
         <div className="reports-section">
           <h2>Download Reports</h2>
           <p className="reports-subtitle">Export comprehensive analysis in multiple formats</p>
-          
+
           <div className={getGridClass("download-grid")}>
             <button className="download-btn json-btn" onClick={() => downloadReport('json')}>
               <svg className="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

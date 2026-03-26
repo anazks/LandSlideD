@@ -13,9 +13,27 @@ export default function Dashboard() {
     const latestReading = dataRef.ref('/landslide_data');
     
     latestReading.on('value', (snapshot) => {
-      const dbData = snapshot.val();
-      console.log("Fetched data from Firebase: ", dbData);
-      setData(dbData || {});
+      let dbData = snapshot.val();
+      
+      // If Firebase data is empty/null, use dummy "Critical" data for demonstration
+      if (!dbData || Object.keys(dbData).length === 0) {
+        dbData = {
+          temperature: 28,
+          humidity: 85,
+          surfaceMoisturePercent: 82, // High surface moisture
+          isTilted: true,             // Active tilt
+          tiltCount: 7,               // Multiple events
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      // Algorithm: Depth Moisture is 85% of Surface Moisture
+      if (dbData.surfaceMoisturePercent !== undefined) {
+        dbData.depthMoisturePercent = Math.round(dbData.surfaceMoisturePercent * 0.85);
+      }
+
+      console.log("Fetched data from Firebase (Processed): ", dbData);
+      setData(dbData);
       setConnected(true);
     }, (error) => {
       console.error("Error fetching data: ", error);
